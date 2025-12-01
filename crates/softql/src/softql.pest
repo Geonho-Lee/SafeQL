@@ -1,0 +1,101 @@
+softql = { SOI ~ ws* ~ query ~ ws* ~ EOI }
+
+query = {
+    identifier ~ ( ws* ~ "." ~ ws* ~ operator_call )*
+}
+
+operator_call = _{
+      join_call
+    | where_call
+    | group_call
+    | having_call
+    | aggregate_call
+    | project_call
+    | order_call
+    | limit_call
+}
+
+join_call = {
+    "join" ~ "(" ~ ws* ~ table_reference ~ (ws* ~ "," ~ ws* ~ predicate)? ~ ws* ~ ")"
+}
+where_call = {
+    "where" ~ "(" ~ ws* ~ predicate ~ ws* ~ ")"
+}
+group_call = {
+    "group" ~ "(" ~ ws* ~ expression ~ ws* ~ ")"
+}
+having_call = {
+    "having" ~ "(" ~ ws* ~ predicate ~ ws* ~ ")"
+}
+aggregate_call = {
+    "aggregate" ~ "(" ~ ws* ~ multi_expressions ~ ws* ~ ")"
+}
+project_call = {
+    "project" ~ "(" ~ ws* ~ multi_expressions ~ ws* ~ ")"
+}
+order_call = {
+    "order" ~ "(" ~ ws* ~ multi_expressions ~ ws* ~ ")"
+}
+limit_call = {
+    "limit" ~ "(" ~ ws* ~ number_literal ~ ws* ~ ")"
+}
+
+table_reference = { identifier }
+
+predicate = { or_expr }
+
+or_expr = {
+    and_expr ~ ( ws* ~ "OR" ~ ws* ~ and_expr )*
+}
+
+and_expr = {
+    unary_expr ~ ( ws* ~ "AND" ~ ws* ~ unary_expr )*
+}
+
+NOT = @{ "NOT" }
+
+unary_expr = {
+    ( NOT ~ ws* ~ unary_expr )
+  | ( "(" ~ ws* ~ or_expr ~ ws* ~ ")" )
+  | condition
+}
+
+condition = {
+    function_call
+  | boolean_literal
+}
+
+multi_expressions = {
+    expression ~ (ws* ~ "," ~ ws* ~ expression)*
+}
+
+expression = {
+    function_call
+  | table_field
+  | string_literal
+  | number_literal
+  | boolean_literal
+  | null_literal
+}
+
+function_call = {
+    identifier ~ "(" ~ ws* ~ function_args? ~ ws* ~ ")"
+}
+function_args = {
+    expression ~ (ws* ~ "," ~ ws* ~ expression)*
+}
+
+table_field = {
+    identifier ~ "." ~ identifier
+}
+
+number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ ( "." ~ ASCII_DIGIT+ )? }
+string_literal = @{
+    ( "\"" ~ (!"\"" ~ ANY)* ~ "\"" )
+  | ( "'" ~ (!"'" ~ ANY)* ~ "'" )
+}
+boolean_literal = @{ "true" | "false" }
+null_literal = @{ "null" | "NULL" | "Null" }
+
+identifier = @{ (ASCII_ALPHANUMERIC | "_")+ }
+ws = _{ " " | "\t" | "\n" | "\r" }

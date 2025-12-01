@@ -1,0 +1,126 @@
+[package]
+name = "pgvectors"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "vectors"
+crate-type = ["cdylib", "lib"]
+
+[[bin]]
+name = "pgrx_embed_pgvectors"
+path = "./src/bin/pgrx_embed.rs"
+
+[features]
+default = []
+pg14 = ["pgrx/pg14", "pgrx-tests/pg14"]
+pg15 = ["pgrx/pg15", "pgrx-tests/pg15"]
+pg16 = ["pgrx/pg16", "pgrx-tests/pg16"]
+pg17 = ["pgrx/pg17", "pgrx-tests/pg17"]
+pg_test = [] 
+
+[dependencies]
+arrayvec.workspace = true
+bincode.workspace = true
+byteorder.workspace = true
+chrono = "0.4.38"
+half.workspace = true
+itertools.workspace = true
+libc.workspace = true
+log.workspace = true
+memmap2.workspace = true
+once_cell.workspace = true
+paste.workspace = true
+pest.workspace = true
+pest_derive.workspace = true
+pgrx = { version = "=0.12.5", default-features = false, features = [] }
+pgrx-tests = "=0.12.5"
+prost.workspace = true
+rand.workspace = true
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+validator.workspace = true
+regex.workspace = true
+
+
+base = { path = "crates/base" }
+detect = { path = "crates/detect" }
+embedding = { path = "crates/embedding" }
+text2softql = { path = "crates/text2softql" }
+softql = { path = "crates/softql" }
+interprocess_atomic_wait = { path = "crates/interprocess-atomic-wait" }
+memfd = { path = "crates/memfd" }
+scopeguard = "1.2.0"
+send_fd = { path = "crates/send_fd" }
+service = { path = "crates/service" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tikv-jemallocator = { version = "0.6.0", features = [
+    "disable_initial_exec_tls",
+] }
+
+[build-dependencies]
+bindgen = "0.66.1"
+clippy = { version = "0.0.302", optional = true }
+fs_extra = "1.2.0"
+cc = "1.0.83"
+glob = "0.3.1"
+
+[lints]
+workspace = true
+
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+
+[workspace.dependencies]
+arc-swap = "1.7.0"
+arrayvec = "0.7.4"
+bincode = "1.3.3"
+byteorder = "1.5.0"
+half = { version = "2.4.0", features = ["rand_distr", "serde"] }
+itertools = "0.10.3"
+libc = "0.2.153"
+log = { version = "0.4.21", features = ["std"] }
+memmap2 = "0.9.4"
+once_cell = "1.0"
+parking_lot = "0.12.1"
+paste = "1.0.14"
+pest = "2.5"
+pest_derive = "2.5"
+prost = "0.10.4"
+rand = "0.8.5"
+rand_distr = "0.4.3"
+rustix = { version = "0.38.31", features = ["fs", "mm", "net"] }
+serde = "1"
+serde_json = "1"
+thiserror = "1"
+toml = "0.8.10"
+validator = { version = "0.18.0", features = ["derive"] }
+regex = "1"
+
+[workspace.lints]
+rust.unsafe_op_in_unsafe_fn = "deny"
+rust.unused_lifetimes = "warn"
+rust.unused_qualifications = "warn"
+
+[patch.crates-io]
+pgrx = { git = "https://github.com/tensorchord/pgrx.git", branch = "v0.12.5-patch" }
+
+[profile.opt]
+inherits = "dev"
+opt-level = 3
+debug-assertions = false
+overflow-checks = false
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+debug = true

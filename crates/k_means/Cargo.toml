@@ -1,0 +1,16 @@
+[package]
+name = "k_means"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+half.workspace = true
+rand.workspace = true
+
+base = { path = "../base" }
+common = { path = "../common" }
+smawk = "0.3.2"
+stoppable_rayon = { path = "../stoppable_rayon" }
+
+[lints]
+workspace = true

@@ -1,0 +1,14 @@
+[package]
+name = "flat"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+base = { path = "../base" }
+common = { path = "../common" }
+quantization = { path = "../quantization" }
+stoppable_rayon = { path = "../stoppable_rayon" }
+storage = { path = "../storage" }
+
+[lints]
+workspace = true

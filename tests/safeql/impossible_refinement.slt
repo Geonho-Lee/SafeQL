@@ -1,0 +1,73 @@
+statement ok
+SET search_path TO "$user", public, pg_temp, vectors;
+
+statement ok
+CREATE EXTENSION IF NOT EXISTS vectors;
+
+statement ok
+LOAD 'vectors';
+
+statement ok
+SET vectors.openai_api_key TO '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';
+
+
+statement ok
+CREATE TEMP TABLE person (
+    person_id   SERIAL PRIMARY KEY,
+    first_name  text,
+    last_name   text,
+    age         integer
+);
+INSERT INTO person (first_name, last_name, age)
+VALUES
+    ('Alice', 'Kim', 28),
+    ('Bob', 'Lee', 35),
+    ('Charlie', 'Park', 42);
+
+
+statement ok
+CREATE TEMP TABLE country (
+    country_id  SERIAL PRIMARY KEY,
+    country_name text NOT NULL,
+    region       text
+);
+INSERT INTO country (country_name, region)
+VALUES
+    ('South Korea', 'Asia'),
+    ('United States', 'North America'),
+    ('Germany', 'Europe');
+
+
+statement ok
+CREATE TEMP TABLE country_info (
+    info_id    SERIAL PRIMARY KEY,
+    population bigint,
+    gdp        numeric(15,2),
+    country_id integer,
+    CONSTRAINT country_fk FOREIGN KEY (country_id) REFERENCES country(country_id)
+);
+INSERT INTO country_info (population, gdp, country_id)
+VALUES
+    (51780000, 1800000.00, 1),
+    (331000000, 21400000.00, 2),
+    (83200000, 4200000.00, 3);
+
+
+statement ok
+SELECT load_vector_tables();
+SELECT load_vector_fields();
+SELECT load_vector_similarity_cache();
+SELECT load_vector_operators();
+SELECT load_vector_functions();
+
+
+query I
+SELECT * FROM safeql ($$
+SELECT gdp / 0 FROM country_info c;
+$$) AS t(col int);
+----
+
+query I
+SELECT * FROM safeql ($$
+SELECT strftime(gdp) FROM country_info c;
+$$) AS t(col int);

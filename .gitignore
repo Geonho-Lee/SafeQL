@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+/target
+*.iml
+**/*.rs.bk
+.vscode
+.ignore
+__pycache__
+.pytest_cache
+rustc-ice-*.txt
+build
+.intentionally-empty-file.o
+.venv

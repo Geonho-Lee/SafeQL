@@ -1,0 +1,17 @@
+statement ok
+SET search_path TO pg_temp, vectors;
+
+statement ok
+CREATE TABLE t (val vector(3));
+
+statement ok
+CREATE INDEX ON t USING vectors (val vector_l2_ops);
+
+statement error The dimension of a vector does not matched that in a vector index column.
+INSERT INTO t (val) VALUES ('[0, 1, 2, 3]');
+
+statement error The dimension of a vector does not matched that in a vector index column.
+SELECT * FROM t ORDER BY val <-> '[0, 1, 2, 3]';
+
+statement ok
+DROP TABLE t;

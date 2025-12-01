@@ -1,0 +1,33 @@
+statement ok
+SET search_path TO "$user", public, pg_temp, vectors;
+
+statement ok
+CREATE EXTENSION IF NOT EXISTS vectors;
+
+statement ok
+LOAD 'vectors';
+
+statement ok
+CREATE TEMP TABLE customers (id int, name text);
+INSERT INTO customers VALUES (1,'Alice'), (2,'Bob'), (3,'Carol');
+
+statement ok
+CREATE TEMP TABLE orders (order_id int, customer_id int, amount int);
+INSERT INTO orders VALUES (101,1,100), (102,2,200), (103,2,50);
+
+statement ok
+SELECT load_vector_tables();
+SELECT load_vector_fields();
+
+query I
+SELECT *
+  FROM softql($$
+    customers
+      .join(orders, equals(customers.id, orders.customer_id))
+      .project(customers.name, orders.amount)
+      .order(customers.name, orders.amount)
+  $$) AS t(col int)
+----
+Alice	100
+Bob	50
+Bob	200

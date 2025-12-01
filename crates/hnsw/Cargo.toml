@@ -1,0 +1,19 @@
+[package]
+name = "hnsw"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+parking_lot.workspace = true
+serde_json.workspace = true
+
+base = { path = "../base" }
+common = { path = "../common" }
+graph = { path = "../graph" }
+log.workspace = true
+quantization = { path = "../quantization" }
+stoppable_rayon = { path = "../stoppable_rayon" }
+storage = { path = "../storage" }
+
+[lints]
+workspace = true

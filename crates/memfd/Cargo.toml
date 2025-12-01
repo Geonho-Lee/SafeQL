@@ -1,0 +1,11 @@
+[package]
+name = "memfd"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rand.workspace = true
+rustix.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,36 @@
+statement ok
+SET search_path TO "$user", public, pg_temp, vectors;
+
+statement ok
+CREATE EXTENSION IF NOT EXISTS vectors;
+
+statement ok
+LOAD 'vectors';
+
+statement ok
+CREATE TEMP TABLE sales (region text, qty int);
+INSERT INTO sales VALUES
+  ('APAC', 10),
+  ('APAC', 20),
+  ('EMEA', 15);
+
+statement ok
+SELECT load_vector_tables();
+SELECT load_vector_fields();
+
+query I
+SELECT *
+  FROM softql($$
+    sales.aggregate(count(sales.region))
+  $$) AS t(col int);
+----
+3
+
+query I
+SELECT *
+  FROM softql($$
+    sales
+      .aggregate(sum(sales.qty))
+  $$) AS t(col int);
+----
+45

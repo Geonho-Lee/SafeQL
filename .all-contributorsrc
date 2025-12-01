@@ -1,0 +1,166 @@
+{
+  "projectName": "pgvecto.rs",
+  "projectOwner": "tensorchord",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 70,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributorsSortAlphabetically": true,
+  "contributors": [
+    {
+      "login": "gaocegege",
+      "name": "Ce Gao",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5100735?v=4",
+      "profile": "https://github.com/gaocegege",
+      "contributions": [
+        "business",
+        "content",
+        "doc"
+      ]
+    },
+    {
+      "login": "kemingy",
+      "name": "Keming",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12974685?v=4",
+      "profile": "https://blog.mapotofu.org/",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "ideas",
+        "infra"
+      ]
+    },
+    {
+      "login": "VoVAllen",
+      "name": "Jinjing Zhou",
+      "avatar_url": "https://avatars.githubusercontent.com/u/8686776?v=4",
+      "profile": "https://github.com/VoVAllen",
+      "contributions": [
+        "design",
+        "ideas",
+        "projectManagement"
+      ]
+    },
+    {
+      "login": "skyzh",
+      "name": "Alex Chi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4198311?v=4",
+      "profile": "https://skyzh.dev",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "odysa",
+      "name": "odysa",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22908409?v=4",
+      "profile": "https://github.com/odysa",
+      "contributions": [
+        "doc",
+        "code"
+      ]
+    },
+    {
+      "login": "usamoi",
+      "name": "Usamoi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/79277854?v=4",
+      "profile": "https://usamoi.com",
+      "contributions": [
+        "code",
+        "ideas"
+      ]
+    },
+    {
+      "login": "yihong0618",
+      "name": "yihong",
+      "avatar_url": "https://avatars.githubusercontent.com/u/15976103?v=4",
+      "profile": "http://yihong.run",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "yeya24",
+      "name": "Ben Ye",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25150124?v=4",
+      "profile": "https://yeya24.github.io/",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "AveryQi115",
+      "name": "Avery",
+      "avatar_url": "https://avatars.githubusercontent.com/u/42568619?v=4",
+      "profile": "https://github.com/AveryQi115",
+      "contributions": [
+        "code",
+        "ideas"
+      ]
+    },
+    {
+      "login": "silver-ymz",
+      "name": "Mingzhuo Yin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/78400701?v=4",
+      "profile": "https://blog.ymzymz.me",
+      "contributions": [
+        "code",
+        "test",
+        "infra"
+      ]
+    },
+    {
+      "login": "BeautyyuYanli",
+      "name": "盐粒 Yanli",
+      "avatar_url": "https://avatars.githubusercontent.com/u/32453863?v=4",
+      "profile": "https://yanli.one",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "AuruTus",
+      "name": "AuruTus",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33182215?v=4",
+      "profile": "https://github.com/AuruTus",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "cutecutecat",
+      "name": "cutecutecat",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19801166?v=4",
+      "profile": "https://github.com/cutecutecat",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "JoePassanante",
+      "name": "Joe Passanante",
+      "avatar_url": "https://avatars.githubusercontent.com/u/28711605?v=4",
+      "profile": "https://github.com/JoePassanante",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "my-vegetable-has-exploded",
+      "name": "yi wang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/48236141?v=4",
+      "profile": "https://github.com/my-vegetable-has-exploded",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": true,
+  "commitType": "docs"
+}

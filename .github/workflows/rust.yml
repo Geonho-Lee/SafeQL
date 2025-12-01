@@ -1,0 +1,129 @@
+name: Rust
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".cargo/**"
+      - ".github/**"
+      - "crates/**"
+      - "scripts/**"
+      - "src/**"
+      - "tests/**"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "rust-toolchain.toml"
+      - "vectors.control"
+      - "vendor/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".cargo/**"
+      - ".github/**"
+      - "crates/**"
+      - "scripts/**"
+      - "src/**"
+      - "tests/**"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "rust-toolchain.toml"
+      - "vectors.control"
+      - "vendor/**"
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  SCCACHE_GHA_ENABLED: true
+  RUSTC_WRAPPER: sccache
+  RUSTFLAGS: "-Dwarnings"
+  CARGO_PROFILE_OPT_BUILD_OVERRIDE_DEBUG: true
+
+jobs:
+  check_and_test:
+    strategy:
+      matrix:
+        arch: ["x86_64", "aarch64"]
+    runs-on: ubuntu-latest
+    env:
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Environment
+        run: |
+          sudo apt-get remove -y '^postgres.*' '^libpq.*' '^clang.*' '^llvm.*' '^libclang.*' '^libllvm.*' '^mono-llvm.*'
+          sudo apt-get purge -y '^postgres.*' '^libpq.*' '^clang.*' '^llvm.*' '^libclang.*' '^libllvm.*' '^mono-llvm.*'
+          sudo apt-get update
+          sudo apt-get install -y build-essential crossbuild-essential-arm64
+          sudo apt-get install -y qemu-user-static
+          touch ~/.cargo/config.toml
+          echo 'target.aarch64-unknown-linux-gnu.linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
+          echo 'target.aarch64-unknown-linux-gnu.runner = ["qemu-aarch64-static", "-L", "/usr/aarch64-linux-gnu"]' >> ~/.cargo/config.toml
+          rustup target add x86_64-unknown-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+      - name: Set up Sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: Set up Cache
+        uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ hashFiles('./Cargo.lock') }}-${{ matrix.arch }}
+      - name: Clippy
+        run: |
+          cargo clippy --workspace --exclude pgvectors --exclude pyvectors --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg14_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG14=$(pwd)/vendor/pg14_${ARCH}_debian/pgrx_binding
+          cargo clippy --package pgvectors --features pg14 --no-deps --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg15_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG15=$(pwd)/vendor/pg15_${ARCH}_debian/pgrx_binding
+          cargo clippy --package pgvectors --features pg15 --no-deps --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg16_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG16=$(pwd)/vendor/pg16_${ARCH}_debian/pgrx_binding
+          cargo clippy --package pgvectors --features pg16 --no-deps --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg17_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG17=$(pwd)/vendor/pg17_${ARCH}_debian/pgrx_binding
+          cargo clippy --package pgvectors --features pg17 --no-deps --target $ARCH-unknown-linux-gnu
+      - name: Build
+        run: |
+          cargo build --workspace --exclude pgvectors --exclude pyvectors --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg14_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG14=$(pwd)/vendor/pg14_${ARCH}_debian/pgrx_binding
+          cargo build --package pgvectors --lib --features pg14 --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg15_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG15=$(pwd)/vendor/pg15_${ARCH}_debian/pgrx_binding
+          cargo build --package pgvectors --lib --features pg15 --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg16_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG16=$(pwd)/vendor/pg16_${ARCH}_debian/pgrx_binding
+          cargo build --package pgvectors --lib --features pg16 --target $ARCH-unknown-linux-gnu
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg17_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG17=$(pwd)/vendor/pg17_${ARCH}_debian/pgrx_binding
+          cargo build --package pgvectors --lib --features pg17 --target $ARCH-unknown-linux-gnu
+      - name: Test
+        run: |
+          cargo test --workspace --exclude pgvectors --exclude pyvectors --no-fail-fast --target $ARCH-unknown-linux-gnu
+      - name: Test (x86_64)
+        if: matrix.arch == 'x86_64'
+        run: |
+          ASSETS=$(mktemp -d)
+          wget https://downloadmirror.intel.com/813591/sde-external-9.33.0-2024-01-07-lin.tar.xz -O $ASSETS/sde-external.tar.xz
+          tar -xf $ASSETS/sde-external.tar.xz -C $ASSETS
+          cargo --config "target.x86_64-unknown-linux-gnu.runner = [\"$ASSETS/sde-external-9.33.0-2024-01-07-lin/sde64\", \"-spr\", \"--\"]" test "_v4" --workspace --exclude pgvectors --exclude pyvectors --no-fail-fast --target $ARCH-unknown-linux-gnu
+      - name: Post Set up Cache
+        uses: actions/cache/save@v4
+        if: ${{ !steps.cache.outputs.cache-hit }}
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ hashFiles('./Cargo.lock') }}-${{ matrix.arch }}

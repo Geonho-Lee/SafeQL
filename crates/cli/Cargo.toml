@@ -1,0 +1,20 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+argh = "0.1.12"
+env_logger = "0.11.3"
+log.workspace = true
+num-traits = "0.2.19"
+rand.workspace = true
+toml.workspace = true
+
+base = { path = "../base" }
+detect = { path = "../detect" }
+index = { path = "../index" }
+service = { path = "../service" }
+
+[lints]
+workspace = true

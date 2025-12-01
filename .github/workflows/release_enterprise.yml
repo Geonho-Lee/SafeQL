@@ -1,0 +1,194 @@
+name: Release for Enterprise
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version
+        required: true
+      tag:
+        type: string
+        description: Tag
+        required: true
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  SCCACHE_GHA_ENABLED: true
+  RUSTC_WRAPPER: sccache
+  RUSTFLAGS: "-Dwarnings"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  semver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const r = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+            if (!r.test("${{ github.event.inputs.version }}")) {
+              core.setFailed(`Action failed with an invalid semver.`);
+            }
+  binary:
+    strategy:
+      matrix:
+        version: [14, 15, 16]
+        arch: ["x86_64"]
+        schema: ["vectors", "extensions", "public"]
+    runs-on: ubuntu-22.04
+    env:
+      SEMVER: ${{ github.event.inputs.version }}
+      VERSION: ${{ matrix.version }}
+      ARCH: ${{ matrix.arch }}
+      PGVECTORS_SCHEMA: ${{ matrix.schema }}
+    needs: ["semver"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Environment
+        run: |
+          sudo apt-get remove -y '^postgres.*' '^libpq.*' '^clang.*' '^llvm.*' '^libclang.*' '^libllvm.*' '^mono-llvm.*'
+          sudo apt-get purge -y '^postgres.*' '^libpq.*' '^clang.*' '^llvm.*' '^libclang.*' '^libllvm.*' '^mono-llvm.*'
+          sudo apt-get update
+          sudo apt-get install -y build-essential crossbuild-essential-arm64
+          sudo apt-get install -y qemu-user-static
+          touch ~/.cargo/config.toml
+          echo 'target.aarch64-unknown-linux-gnu.linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
+          echo 'target.aarch64-unknown-linux-gnu.runner = ["qemu-aarch64-static", "-L", "/usr/aarch64-linux-gnu"]' >> ~/.cargo/config.toml
+          rustup target add x86_64-unknown-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+      - name: Set up Sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: Set up Cache
+        uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ hashFiles('./Cargo.lock') }}-${{ matrix.version }}-${{ matrix.arch }}
+      - name: Schema
+        run: |
+          echo -n $PGVECTORS_SCHEMA > .schema
+          sed -i "/schema/ c\schema = $PGVECTORS_SCHEMA" ./vectors.control
+      - name: Build
+        run: |
+          export PGRX_PG_CONFIG_PATH=$(pwd)/vendor/pg${VERSION}_${ARCH}_debian/pg_config/pg_config
+          export PGRX_TARGET_INFO_PATH_PG$VERSION=$(pwd)/vendor/pg${VERSION}_${ARCH}_debian/pgrx_binding
+          cargo build --package pgvectors --lib --features pg$VERSION --target $ARCH-unknown-linux-gnu --release
+          ./tools/schema.sh --features pg$VERSION --target $ARCH-unknown-linux-gnu --release | expand -t 4 > ./target/schema.sql
+      - name: Package
+        run: |
+          export PLATFORM=$(echo $ARCH | sed 's/aarch64/arm64/; s/x86_64/amd64/')
+          ./scripts/package.sh
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export TAG=${{ github.event.inputs.tag }}
+          export PLATFORM=$(echo $ARCH | sed 's/aarch64/arm64/; s/x86_64/amd64/')
+          export FILE_NAME=vectors-pg${VERSION}_${SEMVER}_${PLATFORM}.deb
+          export FINAL_NAME=vectors-pg${VERSION}_${SEMVER}_${PLATFORM}_${PGVECTORS_SCHEMA}.deb
+          mv ./build/${FILE_NAME} ./build/${FINAL_NAME}
+          gh release upload --clobber $TAG ./build/${FINAL_NAME}
+      - name: Post Set up Cache
+        uses: actions/cache/save@v4
+        if: ${{ !steps.cache.outputs.cache-hit }}
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ hashFiles('./Cargo.lock') }}-${{ matrix.version }}-${{ matrix.arch }}
+  docker_binary_release:
+    needs: ["binary", "semver"]
+    strategy:
+      matrix:
+        version: [14, 15, 16]
+        platform: ["amd64"]
+        schema: ["vectors", "extensions", "public"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download ${{ github.event.inputs.tag }} --pattern "vectors-pg${{ matrix.version }}_${{ github.event.inputs.version }}_${{ matrix.platform }}_${{ matrix.schema }}.deb" --output pgvecto-rs-binary-release.deb
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERIO_MODELZ_USERNAME }}
+          password: ${{ secrets.DOCKERIO_MODELZ_TOKEN }}
+      - name: Push binary release to Docker Registry
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          platforms: "linux/${{ matrix.platform }}"
+          file: ./docker/binary_release.Dockerfile
+          tags: modelzai/pgvecto-rs-binary:pg${{ matrix.version }}-v${{ github.event.inputs.version }}-${{ matrix.platform }}-${{ matrix.schema }}
+  docker_release:
+    needs: ["docker_binary_release", "semver"]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [14, 15, 16] # https://github.com/tembo-io/trunk/issues/797, 17 not support yet
+        schema: ["vectors", "extensions", "public"]
+        platform: ["amd64"] # Only support x86-64 architecture, aarch64 not support yet
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Variables
+        id: variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.setOutput('tags', "modelzai/pgvecto-rs:${{ matrix.version }}-v${{ github.event.inputs.version }}-${{ matrix.schema }}-exts");
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERIO_MODELZ_USERNAME }}
+          password: ${{ secrets.DOCKERIO_MODELZ_TOKEN }}
+      - name: Set Lib Dir
+        run: |
+          if [ "${{ matrix.platform }}" == "amd64" ]; then
+            echo "LIB_DIR=/usr/lib/x86_64-linux-gnu" >> $GITHUB_ENV
+          elif [ "${{ matrix.platform }}" == "arm64" ]; then
+            echo "LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
+          else
+            echo "LIB_DIR=/usr/lib/unknown" >> $GITHUB_ENV
+          fi
+      - name: Push postgres with pgvecto.rs enterprise to Docker Registry
+        uses: docker/build-push-action@v4
+        with:
+          context: ./docker/pg-cnpg
+          push: true
+          platforms: "linux/${{ matrix.platform }}"
+          file: ./docker/pg-cnpg/Dockerfile
+          build-args: |
+            PG_MAJOR=${{ matrix.version }}
+            FROM_TAG=pg${{ matrix.version }}-v${{ github.event.inputs.version }}
+            SCHEMA=${{ matrix.schema }}
+            TARGETARCH=${{ matrix.platform }}
+            LIB_DIR=${{ env.LIB_DIR }}
+          tags: ${{ steps.variables.outputs.tags }}

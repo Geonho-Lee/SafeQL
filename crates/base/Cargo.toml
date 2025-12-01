@@ -1,0 +1,19 @@
+[package]
+name = "base"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+half.workspace = true
+libc.workspace = true
+rand.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+validator.workspace = true
+
+base_macros = { path = "../base_macros" }
+detect = { path = "../detect" }
+
+[lints]
+workspace = true

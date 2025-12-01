@@ -1,0 +1,19 @@
+[package]
+name = "indexing"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+base = { path = "../base" }
+
+# algorithms
+flat = { path = "../flat" }
+hnsw = { path = "../hnsw" }
+ivf = { path = "../ivf" }
+quantization = { path = "../quantization" }
+sparse_inverted_index = { path = "../sparse_inverted_index" }
+
+[lints]
+workspace = true

@@ -1,0 +1,14 @@
+[default.extend-words]
+ND = "ND"
+DUR = "DUR"
+ANS = "ANS"
+RABIT = "RABIT"
+
+[default]
+extend-ignore-re = [
+    # Latex formula
+    "\\$.+?\\$",
+]
+
+[files]
+extend-exclude = ["vendor"]

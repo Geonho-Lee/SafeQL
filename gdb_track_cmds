@@ -1,0 +1,87 @@
+set pagination off
+set confirm off
+set follow-fork-mode parent
+set detach-on-fork off
+set print thread-events off
+
+set $forkcnt = 0
+set $SKIP_FORKS = 6
+set $attached_pids = ""
+
+handle SIGABRT stop print pass
+handle SIGSEGV stop print pass
+handle SIGBUS stop print pass
+handle SIGILL stop print pass
+
+catch fork
+commands
+  set $forkcnt = $forkcnt + 1
+  printf "\n========================================\n"
+  printf "[FORK #%d detected]\n", $forkcnt
+
+  if $forkcnt <= $SKIP_FORKS
+    printf "  → Background worker (skipping)\n"
+    set detach-on-fork on
+    continue
+  else
+    printf "  → Client backend detected! Attaching automatically...\n"
+    set detach-on-fork off
+    continue
+  end
+end
+
+handle SIGABRT stop print pass
+commands
+  printf "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  printf "!!! CRASH DETECTED (SIGABRT) !!!\n"
+  printf "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  bt full
+  thread apply all bt
+  info locals
+  printf "\n(Use 'info inferiors' to see PID list)\n"
+  continue
+end
+
+handle SIGSEGV stop print pass
+commands
+  printf "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  printf "!!! CRASH DETECTED (SIGSEGV) !!!\n"
+  printf "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  bt full
+  thread apply all bt
+  info locals
+  printf "\n(Use 'info inferiors' to see PID list)\n"
+  continue
+end
+
+handle SIGBUS stop print pass
+commands
+  printf "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  printf "!!! CRASH DETECTED (SIGBUS) !!!\n"
+  printf "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  bt full
+  thread apply all bt
+  info locals
+  printf "\n(Use 'info inferiors' to see PID list)\n"
+  continue
+end
+
+handle SIGILL stop print pass
+commands
+  printf "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  printf "!!! CRASH DETECTED (SIGILL) !!!\n"
+  printf "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  bt full
+  thread apply all bt
+  info locals
+  printf "\n(Use 'info inferiors' to see PID list)\n"
+  continue
+end
+
+define check_all
+  printf "\n=== Currently tracked processes ===\n"
+  info inferiors
+  printf "===================================\n"
+end
+
+run

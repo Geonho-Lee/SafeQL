@@ -1,0 +1,12 @@
+[package]
+name = "send_fd"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+libc.workspace = true
+log.workspace = true
+rustix.workspace = true
+
+[lints]
+workspace = true

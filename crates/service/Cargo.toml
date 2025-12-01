@@ -1,0 +1,19 @@
+[package]
+name = "service"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+arc-swap.workspace = true
+half.workspace = true
+parking_lot.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+base = { path = "../base" }
+common = { path = "../common" }
+index = { path = "../index" }
+
+[lints]
+workspace = true

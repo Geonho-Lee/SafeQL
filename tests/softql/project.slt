@@ -1,0 +1,49 @@
+statement ok
+SET search_path TO "$user", public, pg_temp, vectors;
+
+statement ok
+CREATE EXTENSION IF NOT EXISTS vectors;
+
+statement ok
+LOAD 'vectors';
+
+statement ok
+CREATE TEMP TABLE customers (a int, b text);
+INSERT INTO customers(a, b) VALUES
+  (1,'x'),
+  (2,'y'),
+  (3,'z');
+
+statement ok
+SELECT load_vector_tables();
+SELECT load_vector_fields();
+
+query I
+SELECT *
+FROM softql($$
+customers.project(customers.a)
+$$) AS t(col int);
+----
+1
+2
+3
+
+query I
+SELECT *
+FROM softql($$
+customers.project(customers.b)
+$$) AS t(col int);
+----
+x
+y
+z
+
+query I
+SELECT *
+FROM softql($$
+customers.project(customers.a, customers.b)
+$$) AS t(col int); 
+----
+1	x
+2	y
+3	z

@@ -1,0 +1,82 @@
+//! Postgres vector extension.
+//!
+//! Provides an easy-to-use extension for vector similarity search.
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
+
+mod bgworker;
+mod datatype;
+mod embedding;
+mod error;
+mod gucs;
+mod index;
+mod ipc;
+mod logger;
+mod parser;
+mod safeql;
+mod softql;
+mod upgrade;
+mod utils;
+
+pgrx::pg_module_magic!();
+pgrx::extension_sql_file!("./sql/bootstrap.sql", bootstrap);
+pgrx::extension_sql_file!("./sql/finalize.sql", finalize);
+
+#[pgrx::pg_guard]
+unsafe extern "C" fn _PG_init() {
+    use crate::error::*;
+    if unsafe { pgrx::pg_sys::IsUnderPostmaster } {
+        bad_init();
+    }
+    unsafe {
+        detect::init();
+        gucs::init();
+        index::init();
+        ipc::init();
+        bgworker::init();
+        parser::init();
+        safeql::init();
+    }
+}
+
+#[cfg(not(all(target_endian = "little", target_pointer_width = "64")))]
+compile_error!("Target architecture is not supported.");
+
+#[cfg(target_os = "linux")]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
+const SCHEMA: &str = include_str!("../.schema");
+
+const SCHEMA_C_BYTES: [u8; SCHEMA.len() + 1] = {
+    let mut bytes = [0u8; SCHEMA.len() + 1];
+    let mut i = 0_usize;
+    while i < SCHEMA.len() {
+        bytes[i] = SCHEMA.as_bytes()[i];
+        i += 1;
+    }
+    bytes
+};
+
+const SCHEMA_C_STR: &std::ffi::CStr = match std::ffi::CStr::from_bytes_with_nul(&SCHEMA_C_BYTES) {
+    Ok(x) => x,
+    Err(_) => panic!("there are null characters in schema"),
+};
+
+#[cfg(test)]
+pub mod pg_test {
+    pub fn setup(_options: Vec<&str>) {
+        // perform one-off initialization when the pg_test framework starts
+    }
+
+    pub fn postgresql_conf_options() -> Vec<&'static str> {
+        // return any postgresql.conf settings that are required for your tests
+
+        let mut options: Vec<&'static str> = Vec::new();
+
+        options.push("shared_preload_libraries='vectors.so'");
+
+        options
+    }
+}
